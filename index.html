@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="auto" data-compact-lists="true">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A mobile-first, static and searchable edition of the Connecticut General Statutes.">
+  <meta name="theme-color" content="#071525">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png" sizes="180x180">
+  <link rel="alternate" href="./discover/" title="Static title and chapter index">
+  <title>Connecticut General Statutes</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="preload" href="./data/catalog.json?release=0e1966587090718b6dd5e4effbb2c579e1957c2655c0021b999cc114ad8d05d3" as="fetch" crossorigin>
+  <link rel="modulepreload" href="./about-page.js">
+  <link rel="modulepreload" href="./act-amendments.js">
+  <link rel="modulepreload" href="./acts.js">
+  <link rel="modulepreload" href="./bookmark-controls.js">
+  <link rel="modulepreload" href="./bookmark-page.js">
+  <link rel="modulepreload" href="./context-navigation.js">
+  <link rel="modulepreload" href="./data-loader.js">
+  <link rel="modulepreload" href="./device-state.js">
+  <link rel="modulepreload" href="./dialog.js">
+  <link rel="modulepreload" href="./navigation-history.js">
+  <link rel="modulepreload" href="./omnisearch-controller.js">
+  <link rel="modulepreload" href="./omnisearch.js">
+  <link rel="modulepreload" href="./publications.js">
+  <link rel="modulepreload" href="./pwa.js">
+  <link rel="modulepreload" href="./quick-search.js">
+  <link rel="modulepreload" href="./reader.js">
+  <link rel="modulepreload" href="./release.js">
+  <link rel="modulepreload" href="./revision-diff.js">
+  <link rel="modulepreload" href="./routes.js">
+  <link rel="modulepreload" href="./search-client.js">
+  <link rel="modulepreload" href="./search-highlight.js">
+  <link rel="modulepreload" href="./search.js">
+  <link rel="modulepreload" href="./secondary-sources.js">
+  <link rel="modulepreload" href="./secondary-ui.js">
+  <link rel="modulepreload" href="./shell.js">
+  <link rel="modulepreload" href="./site-updates.js">
+  <link rel="modulepreload" href="./supplement-overlay.js">
+  <link rel="modulepreload" href="./supplements.js">
+  <script>
+  (() => {
+    const route = /^#\/t\/[^/?]+(?:\/c\/([^/?]+))?/.exec(location.hash);
+    if (!route) return;
+    const files = ["./data/supplements/manifest.json","./data/supplements/2026/manifest.json"];
+    const chapter = route[1] && decodeURIComponent(route[1]);
+    if (chapter && !["023m","203b","382e","392a","743kk","art-012","art-012a","819","932"].includes(chapter)) files.push("./data/chapters/" + chapter + ".json");
+    for (const href of files) document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "fetch", crossOrigin: "anonymous", href: href + "?release=0e1966587090718b6dd5e4effbb2c579e1957c2655c0021b999cc114ad8d05d3" }));
+  })();
+  </script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content" data-skip-link>Skip to content</a>
+  <div id="app"><main class="loading" id="main-content">Loading the statutes…<noscript><p>JavaScript is required for the interactive reader. <a href="./discover/">Browse the static title and chapter index</a> or <a href="./discover/understanding-the-statutes/">read Understanding the Statutes on one page</a>.</p></noscript></main></div>
+</body>
+</html>
