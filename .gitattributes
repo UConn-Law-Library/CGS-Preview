@@ -1,0 +1,3 @@
+# Generated static artifacts must retain their build-time bytes.
+* -text
+README.md text eol=lf
