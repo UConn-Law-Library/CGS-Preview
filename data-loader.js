@@ -1,4 +1,4 @@
-const DATA_RELEASE_ID = "0e1966587090718b6dd5e4effbb2c579e1957c2655c0021b999cc114ad8d05d3";
+const DATA_RELEASE_ID = "f306e0daaaafc78e476c2322fdaac3664605a13c03e15fa1876b661192ce8355";
 
 // A tab keeps its generation even if a newer service worker takes control.
 export function dataUrl(path) {
