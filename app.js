@@ -1,6 +1,6 @@
 import { createOmnisearchController } from "./omnisearch-controller.js";
 import { createAboutPage, formatSnapshotDate } from "./about-page.js";
-import { createShell, icons, bookmarkButtonLabel } from "./shell.js";
+import { createShell, icons, bookmarkButtonLabel, iconActionLabel } from "./shell.js";
 import { QuickSearchRepository } from "./quick-search.js";
 import { renderBookmarkPage } from "./bookmark-page.js";
 import { bindBookmarkControls } from "./bookmark-controls.js";
@@ -515,11 +515,9 @@ function supplementLabel(change, { short = false } = {}) {
 }
 
 function renderPreviousRevision(change, maps) {
-  if (!change?.previousSections?.length) return "";
   const priorYear = change.editionYear - 1;
-  return `<details class="prior-revision">
-    <summary>Text of the ${priorYear} revision (superseded by the ${change.editionYear} Supplement)</summary>
-    <div>${change.previousSections.map((section) => `<section class="prior-provision">
+  return `<p class="revision-view-note">Text of the ${priorYear} revision, superseded by the ${change.editionYear} Supplement.</p>
+    ${change.previousSections.map((section) => `<section class="prior-provision">
       <h2>${escapeHtml(section.heading)}</h2>
       <div class="statute-text">${section.content.body.map((paragraph) => `<p>${renderLinkedText(paragraph, maps)}</p>`).join("")}</div>
       <div class="section-notes">
@@ -527,14 +525,11 @@ function renderPreviousRevision(change, maps) {
         ${renderNotes("History", section.content.history, maps)}
         ${renderAnnotations(section.content.annotations, maps)}
       </div>
-    </section>`).join("")}</div>
-  </details>`;
+    </section>`).join("")}`;
 }
 
 function renderRevisionComparison(section, change, maps) {
-  if (!change?.previousSections?.length) return "";
   const priorYear = change.editionYear - 1;
-  const id = `revision-comparison-${section.id.replace(/[^a-z0-9_-]/gi, "-")}`;
   const previousText = change.previousSections
     .map((previous) => previous.content.body.join("\n\n"))
     .join("\n\n");
@@ -546,15 +541,27 @@ function renderRevisionComparison(section, change, maps) {
     if (segment.type === "delete") return `<del class="revision-deletion">${text}</del>`;
     return text;
   }).join("");
-  return `<details class="revision-comparison" id="${escapeHtml(id)}">
-    <summary>Compare with ${priorYear} text</summary>
-    <div class="revision-comparison-content" aria-labelledby="${escapeHtml(id)}-heading">
-      <header><p class="eyebrow">Language comparison</p><h2 id="${escapeHtml(id)}-heading">${change.editionYear} Supplement compared with ${priorYear}</h2><p>Formatting changes may appear as textual changes. Verify language with the official sources.</p></header>
+  return `<div class="revision-comparison-content">
+      <header><p class="eyebrow">Language comparison</p><h2>${change.editionYear} Supplement compared with ${priorYear}</h2><p>Formatting changes may appear as textual changes. Verify language with the official sources.</p></header>
       <div class="revision-diff-legend" aria-label="Comparison legend"><span class="revision-addition">Added in ${change.editionYear}</span><span class="revision-deletion">Removed from ${priorYear}</span></div>
       <div class="statute-text revision-diff-text">${diff}</div>
-      ${renderPreviousRevision(change, maps)}
-    </div>
-  </details>`;
+    </div>`;
+}
+
+// A section with earlier text switches between three views. The Supplement's text comes first
+// because it is the current law. Any other section renders its text directly.
+function renderTextViews(section, change, currentView, maps) {
+  if (!change?.previousSections?.length) return currentView;
+  const id = `revision-views-${section.id.replace(/[^a-z0-9_-]/gi, "-")}`;
+  const views = [
+    ["current", `${change.editionYear} Supplement`, currentView],
+    ["previous", `${change.editionYear - 1} text`, renderPreviousRevision(change, maps)],
+    ["compare", "Compare", renderRevisionComparison(section, change, maps)]
+  ];
+  return `<div class="revision-view-switch"><div class="button-group" role="tablist" aria-label="Section text version">
+      ${views.map(([key, label], index) => `<button type="button" role="tab" id="${id}-${key}-tab" aria-controls="${id}-${key}" aria-selected="${index === 0}"${index ? ' tabindex="-1"' : ""} data-revision-view>${escapeHtml(label)}</button>`).join("")}
+    </div></div>
+    ${views.map(([key, , content], index) => `<div class="revision-view" role="tabpanel" id="${id}-${key}" aria-labelledby="${id}-${key}-tab" tabindex="0"${index ? " hidden" : ""}>${content}</div>`).join("")}`;
 }
 
 function sectionNavigation(title, chapter, sections, selected) {
@@ -593,6 +600,11 @@ function renderPendingAmendments(amendments = []) {
   </aside>`;
 }
 
+// Share opens the device's share sheet. Where there is none, it would only repeat Copy link.
+function canShareFromDevice() {
+  return typeof navigator.share === "function" && matchMedia("(pointer: coarse)").matches;
+}
+
 function renderProvision(title, chapter, section, maps, secondaryContext = null, change = null, amendments = []) {
   const route = provisionRoute(title, chapter, section);
   const absolute = new URL(route, location.href).href;
@@ -605,25 +617,23 @@ function renderProvision(title, chapter, section, maps, secondaryContext = null,
     subtitle: section.heading,
     href: route
   };
-  const comparison = renderRevisionComparison(section, change, maps);
   return `<article class="provision" id="${escapeHtml(section.id)}">
     <div class="provision-heading">
       <p class="eyebrow">${escapeHtml(change ? supplementLabel(change) : status)}</p>
       <h1>${escapeHtml(section.heading)}</h1>
     </div>
-    <div data-amendments-status><p role="status">Amendment information loading…</p></div>
+    <div data-amendments-status><p class="visually-hidden" role="status">Amendment information loading…</p></div>
     <div class="section-actions" aria-label="Section actions">
-      <button type="button" class="primary-action" data-copy-citation="${escapeHtml(`Conn. Gen. Stat. ${section.citation ? `§ ${section.citation}` : sectionLabel(section)}`)}">Copy citation</button>
-      ${bookmarkButton(bookmark)}
-      <button type="button" data-copy-link="${escapeHtml(route)}">Copy link</button>
-      <button type="button" data-share-link="${escapeHtml(route)}" data-share-title="${escapeHtml(section.heading)}">Share</button>
-      <a href="${escapeHtml(email)}">Email</a>
-      <a href="${escapeHtml(section.sourceUrl)}">Official source</a>
+      <button type="button" class="icon-action" data-copy-citation="${escapeHtml(`Conn. Gen. Stat. ${section.citation ? `§ ${section.citation}` : sectionLabel(section)}`)}">${iconActionLabel(icons.copy, "Copy citation")}</button>
+      ${bookmarkButton(bookmark, "icon-action")}
+      <button type="button" class="icon-action" data-copy-link="${escapeHtml(route)}">${iconActionLabel(icons.link, "Copy link")}</button>
+      ${canShareFromDevice() ? `<button type="button" class="icon-action" data-share-link="${escapeHtml(route)}" data-share-title="${escapeHtml(section.heading)}">${iconActionLabel(icons.share, "Share")}</button>` : ""}
+      <a class="icon-action" href="${escapeHtml(email)}">${iconActionLabel(icons.mail, "Email")}</a>
+      <a class="primary-action" href="${escapeHtml(section.sourceUrl)}">Official source</a>
     </div>
     <p class="action-status" role="status" aria-live="polite"></p>
-    <div class="statute-text">${section.content.body.map((paragraph) => renderParagraph(paragraph, maps, title, chapter, section)).join("")}</div>
-    ${renderInformationReferences(section, maps, secondaryContext, change)}
-    ${comparison}
+    ${renderTextViews(section, change, `<div class="statute-text">${section.content.body.map((paragraph) => renderParagraph(paragraph, maps, title, chapter, section)).join("")}</div>
+    ${renderInformationReferences(section, maps, secondaryContext, change)}`, maps)}
   </article>`;
 }
 
@@ -1102,7 +1112,7 @@ async function renderChapter(catalog, title, chapterMeta, route, sequence) {
       ${supplementError ? `<p class="supplement-warning" role="alert">The published supplement could not be loaded. This page is showing the base revision only; reload before relying on it.</p>` : ""}
       <p class="source-note">Text: ${escapeHtml(String(catalog.source?.revisionYear ?? "Published"))} revision${latestEdition && !supplementError ? ` with the ${latestEdition.editionYear} Supplement` : ""}. Captured ${escapeHtml(formatSnapshotDate(catalog.source?.retrievedAt ?? catalog.generatedAt) ?? "date unavailable")}.</p>
       <div class="chapter-research-tools"><a href="${escapeHtml(searchRouteHref("", { title: title.id, chapter: chapter.number }))}">Search this chapter</a>${selected ? `<span class="mobile-reader-tools"><button type="button" data-open-chapter-sheet aria-haspopup="dialog">Browse chapter</button></span>` : ""}${selected ? sectionNavigation(title, chapter, chapterNavigation, selected).replace('aria-label="Adjacent sections"', 'aria-label="Section shortcuts"') : ""}</div>
-      ${selected ? `${renderProvision(title, chapter, selected, maps, secondaryContext, changeBySection.get(selected.id), pendingBySection.get(selected.id))}${sectionNavigation(title, chapter, chapterNavigation, selected)}${chapterSheet(title, chapter, chapterNavigation, selected, changeBySection, pendingBySection)}` : `<div class="chapter-overview"><p class="eyebrow">${chapterNavigation.length} sections${hiddenRepealed ? ` · ${hiddenRepealed} repealed hidden` : ""}</p><h1>${escapeHtml(chapterLabel(chapter))} — ${escapeHtml(chapter.name)}</h1>${chapterSupplementSummary(title, chapter, overlay, changeBySection)}<div data-amendments-status><p role="status">Amendment information loading…</p></div><p class="desktop-only">Choose a section from the sections column.</p><a href="${escapeHtml(chapter.sourceUrl)}">Official chapter source</a></div>${mobileChapterList}`}
+      ${selected ? `${renderProvision(title, chapter, selected, maps, secondaryContext, changeBySection.get(selected.id), pendingBySection.get(selected.id))}${sectionNavigation(title, chapter, chapterNavigation, selected)}${chapterSheet(title, chapter, chapterNavigation, selected, changeBySection, pendingBySection)}` : `<div class="chapter-overview"><p class="eyebrow">${chapterNavigation.length} sections${hiddenRepealed ? ` · ${hiddenRepealed} repealed hidden` : ""}</p><h1>${escapeHtml(chapterLabel(chapter))} — ${escapeHtml(chapter.name)}</h1>${chapterSupplementSummary(title, chapter, overlay, changeBySection)}<div data-amendments-status><p class="visually-hidden" role="status">Amendment information loading…</p></div><p class="desktop-only">Choose a section from the sections column.</p><a href="${escapeHtml(chapter.sourceUrl)}">Official chapter source</a></div>${mobileChapterList}`}
     </main>`;
   mountApplicationShell({
     contextualNavigation: [
@@ -1127,8 +1137,7 @@ async function renderChapter(catalog, title, chapterMeta, route, sequence) {
       const amendments = amendmentsForSection(index, section, statuteTextYears(catalog, latestEdition));
       if (amendments.length) pendingBySection.set(section.id, amendments);
     }
-    slot.innerHTML = (selected ? renderPendingAmendments(pendingBySection.get(selected.id)) : pendingChapterSummary(title, chapter, changeBySection, pendingBySection))
-      || '<p class="source-note">No amendments found in the listed acts. Other acts may affect this section; verify with official sources.</p>';
+    slot.innerHTML = (selected ? renderPendingAmendments(pendingBySection.get(selected.id)) : pendingChapterSummary(title, chapter, changeBySection, pendingBySection)) || "";
     for (const marker of app.querySelectorAll("[data-act-notice-for]")) {
       marker.innerHTML = pendingActPill(pendingBySection.get(marker.dataset.actNoticeFor));
     }
@@ -1946,6 +1955,30 @@ document.addEventListener("pointerdown", () => {
   document.documentElement.toggleAttribute("data-keyboard-navigation", false);
 }, true);
 
+function selectRevisionView(tab) {
+  for (const other of tab.parentElement.querySelectorAll("[data-revision-view]")) {
+    const selected = other === tab;
+    other.setAttribute("aria-selected", String(selected));
+    other.tabIndex = selected ? 0 : -1;
+    document.getElementById(other.getAttribute("aria-controls")).hidden = !selected;
+  }
+}
+document.addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-revision-view]");
+  if (tab) selectRevisionView(tab);
+});
+document.addEventListener("keydown", (event) => {
+  const tab = event.target.closest?.("[data-revision-view]");
+  if (!tab || event.altKey || event.ctrlKey || event.metaKey) return;
+  const tabs = [...tab.parentElement.querySelectorAll("[data-revision-view]")];
+  const index = tabs.indexOf(tab);
+  const next = { ArrowLeft: tabs[(index - 1 + tabs.length) % tabs.length], ArrowRight: tabs[(index + 1) % tabs.length], Home: tabs[0], End: tabs.at(-1) }[event.key];
+  if (!next) return;
+  event.preventDefault();
+  selectRevisionView(next);
+  next.focus();
+});
+
 document.addEventListener("input", (event) => {
   if (event.target.matches("[data-filter-list]")) {
     const target = document.getElementById(event.target.dataset.filterList);
@@ -2317,18 +2350,26 @@ document.addEventListener("click", async (event) => {
     }
     return;
   }
-  const copy = event.target.closest("[data-copy-link]");
   const share = event.target.closest("[data-share-link]");
-  if (!copy && !share) return;
-  const button = copy ?? share;
-  const url = new URL(button.dataset.copyLink ?? button.dataset.shareLink, location.href).href;
-  const status = button.closest(".provision")?.querySelector(".action-status");
+  if (share) {
+    const status = share.closest(".provision")?.querySelector(".action-status");
+    try {
+      await navigator.share({ title: share.dataset.shareTitle, url: new URL(share.dataset.shareLink, location.href).href });
+      if (status) status.textContent = "Share options opened.";
+    } catch (error) {
+      // Closing the share sheet without choosing anything is not a failure.
+      if (error.name !== "AbortError" && status) status.textContent = "The share options could not be opened. Use Copy link instead.";
+    }
+    return;
+  }
+  const copy = event.target.closest("[data-copy-link]");
+  if (!copy) return;
+  const status = copy.closest(".provision")?.querySelector(".action-status");
   try {
-    if (share && navigator.share) await navigator.share({ title: share.dataset.shareTitle, url });
-    else await navigator.clipboard.writeText(url);
-    if (status) status.textContent = share && navigator.share ? "Share options opened." : "Link copied.";
-  } catch (error) {
-    if (error.name !== "AbortError" && status) status.textContent = "The link could not be copied automatically.";
+    await navigator.clipboard.writeText(new URL(copy.dataset.copyLink, location.href).href);
+    if (status) status.textContent = "Link copied.";
+  } catch {
+    if (status) status.textContent = "The link could not be copied automatically.";
   }
 });
 
