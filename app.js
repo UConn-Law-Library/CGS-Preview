@@ -109,7 +109,7 @@ let pwaState = pwaManager.state;
 const { closeOmni, scheduleOmnisearch, moveOmniSelection, selectedOmniItem } = createOmnisearchController({ loadCatalog, quickSearch, secondaryRepository, actsRepository });
 const SEARCH_BATCH_SIZE = 50;
 const LARGE_INDEX_TOPIC_THRESHOLD = 200;
-const { siteHeader, globalSearch, updatePwaControls } = createShell({ deviceState, navigationHistory, getPwaState: () => pwaState });
+const { siteHeader, updatePwaControls } = createShell({ deviceState, navigationHistory, getPwaState: () => pwaState });
 const renderAbout = createAboutPage({ app, secondaryRepository, actsRepository, loadLatestSupplement, setDocumentTitle, siteHeader, breadcrumbs, legalFooter, isCurrent: (sequence) => sequence === renderSequence });
 applyPreferences(deviceState.preferences());
 pwaManager.subscribe((state) => {
@@ -171,7 +171,7 @@ function applicationShell({
     `--context-total-width:${fit.total}px`
   ].join(";");
   const hidden = (index) => index < fit.first ? " hidden" : "";
-  return `${siteHeader({ showSearch: mobilePresentationMode !== "home" })}<div class="application-shell mobile-${escapeHtml(mobilePresentationMode)}" data-context-columns="${columnCount}" data-context-widths="${paneWidths.join(",")}" id="context-navigation" data-navigation-collapsed="${layout.collapsed}" style="${style}">
+  return `${siteHeader()}<div class="application-shell mobile-${escapeHtml(mobilePresentationMode)}" data-context-columns="${columnCount}" data-context-widths="${paneWidths.join(",")}" id="context-navigation" data-navigation-collapsed="${layout.collapsed}" style="${style}">
     ${columnCount ? `<button type="button" class="context-collapse-toggle" data-toggle-navigation aria-controls="context-navigation" aria-expanded="${!layout.collapsed}" aria-label="${layout.collapsed ? "Show navigation panes" : "Hide navigation panes"}" title="${layout.collapsed ? "Show navigation panes" : "Hide navigation panes"}"><span aria-hidden="true">${layout.collapsed ? "›" : "‹"}</span></button>` : ""}
     ${contextualNavigation.map((column, index) => `<aside class="context-column ${escapeHtml(column.className ?? "")}" id="context-pane-${index + 1}" data-context-key="${escapeHtml(column.className || column.label)}" aria-label="${escapeHtml(column.label)}"${hidden(index)}>
       ${column.heading ? `<div class="context-column-heading">${column.heading}</div>` : ""}${column.content}
@@ -275,9 +275,9 @@ function railList(items, { className = "", empty = "No items are available." } =
 
 // One small, local list filter shared by navigation panes and touch browse lists.
 // It only filters rendered headings; full-text search remains in its existing worker.
-function browseFilter(id, label, target) {
+function browseFilter(id, label, target, placeholder = "Number or heading") {
   return `<div class="browse-filter"><label for="${id}">${escapeHtml(label)}</label>
-    <input id="${id}" type="search" placeholder="Number or heading" data-filter-list="${target}" aria-controls="${target}" autocomplete="off">
+    <input id="${id}" type="search" placeholder="${escapeHtml(placeholder)}" data-filter-list="${target}" aria-controls="${target}" autocomplete="off">
     <p class="browse-filter-status" role="status" aria-live="polite" data-filter-status="${target}"></p></div>`;
 }
 
@@ -613,8 +613,8 @@ function renderProvision(title, chapter, section, maps, secondaryContext = null,
     </div>
     <div data-amendments-status><p role="status">Amendment information loading…</p></div>
     <div class="section-actions" aria-label="Section actions">
+      <button type="button" class="primary-action" data-copy-citation="${escapeHtml(`Conn. Gen. Stat. ${section.citation ? `§ ${section.citation}` : sectionLabel(section)}`)}">Copy citation</button>
       ${bookmarkButton(bookmark)}
-      <button type="button" data-copy-citation="${escapeHtml(`Conn. Gen. Stat. ${section.citation ? `§ ${section.citation}` : sectionLabel(section)}`)}">Copy citation</button>
       <button type="button" data-copy-link="${escapeHtml(route)}">Copy link</button>
       <button type="button" data-share-link="${escapeHtml(route)}" data-share-title="${escapeHtml(section.heading)}">Share</button>
       <a href="${escapeHtml(email)}">Email</a>
@@ -678,10 +678,8 @@ async function renderHome(catalog) {
       <h1>Connecticut General Statutes</h1>
       <p>Browse and search the statutes, the official subject index, the Judicial Branch infraction schedule, and recent Public and Special Acts. Save frequently used material on this device.</p>
     </header>
-    <section class="research-start" aria-labelledby="research-start-heading">
-      <h2 id="research-start-heading">Search Connecticut law</h2>
-      ${globalSearch({ showBack: false })}
-      <p>Try <a href="${searchRouteHref("1-210")}">1-210</a>, <a href="${searchRouteHref('"freedom of information"')}">“freedom of information”</a>, or <a href="${searchRouteHref("landlord AND tenant")}">landlord AND tenant</a></p>
+    <section class="research-start" aria-label="Search examples">
+      <p>Search Connecticut law by citation or keywords. Try <a href="${searchRouteHref("1-210")}">1-210</a>, <a href="${searchRouteHref('"freedom of information"')}">“freedom of information”</a>, or <a href="${searchRouteHref("landlord AND tenant")}">landlord AND tenant</a></p>
     </section>
     <section class="destination-grid" aria-label="Explore legal materials">
       <a data-destination="statutes" href="${titlesRouteHref()}"><span aria-hidden="true">§</span><strong>Browse statutes</strong><small>Navigate by title, chapter, or section.</small></a>
@@ -888,7 +886,7 @@ async function renderSearchPage(catalog, route) {
   const selectedTitle = catalog.titles.find((title) => title.id === options.title) ?? null;
   setDocumentTitle(query ? `Search: ${query}` : "Search");
   app.innerHTML = `${siteHeader()}<main class="search-page" id="main-content">
-    <header><p class="eyebrow">Statutes, acts, and infractions</p><h1>Search</h1><p>Find sections by citation, phrase, or keyword. Filters apply to statutes; related acts and infractions follow the results.</p></header>
+    <header><p class="eyebrow">Statutes, acts, and infractions</p><h1>Search</h1><p>Find sections by citation, phrase, or keyword. Filters apply to statutes only; matching acts and infractions are listed under “Also found in.”</p></header>
     <form class="search-refine search-v2-refine" data-search-refine>
       <div class="search-primary-controls">
         <div class="search-field search-query-field"><label for="search-page-query">Citation, phrase, or keyword</label>
@@ -907,18 +905,29 @@ async function renderSearchPage(catalog, route) {
           <div class="search-field"><label for="search-supplement-filter">Supplement</label><select id="search-supplement-filter" name="supplement"><option value="">Base and supplement</option><option value="updated"${selectAttribute("updated", options.supplement)}>Updated by supplement</option><option value="base"${selectAttribute("base", options.supplement)}>Base revision only</option></select></div>
           <div class="search-field"><label for="search-sort">Sort</label><select id="search-sort" name="sort"><option value="relevance"${selectAttribute("relevance", options.sort)}>Relevance</option><option value="citation"${selectAttribute("citation", options.sort)}>Citation</option></select></div>
         </div>
-    <details class="search-syntax"><summary>Search syntax and tips</summary><p class="search-help" id="search-help">Use AND, OR, NOT, parentheses, quoted phrases, NEAR/n proximity, and a trailing wildcard such as <code>regulat*</code>. Multiple words use AND automatically. Fuzzy matching and stemming are not applied.</p></details>
       </details>
+      <details class="search-syntax"><summary>Search tips</summary><div class="search-help" id="search-help">
+        <ul>
+          <li><code>landlord AND tenant</code> finds both words. Words with no operator between them are joined by AND.</li>
+          <li><code>lease OR rental</code> finds either word.</li>
+          <li><code>tenant NOT commercial</code> leaves out the word after NOT.</li>
+          <li><code>"security deposit"</code> finds the exact phrase.</li>
+          <li><code>landlord NEAR/5 tenant</code> finds words within 5 words of each other.</li>
+          <li><code>regulat*</code> finds any word starting with those letters. The wildcard works only at the end of a word.</li>
+          <li><code>(lease OR rental) AND deposit</code> groups terms with parentheses.</li>
+        </ul>
+        <p>Stemming and fuzzy matching are off, so <code>tenant</code> does not find “tenants.” Use <code>tenant*</code> to find both.</p>
+      </div></details>
     </form>
 
     ${queryExplanationMarkup(query, options)}
     ${query ? `<details class="search-within-disclosure"${options.within ? " open" : ""}><summary>Search within these results</summary><form class="search-within" data-search-within><label for="search-within-query">Search within these results</label><div><input id="search-within-query" name="within" type="search" minlength="2" value="${escapeHtml(options.within ?? "")}" placeholder="Add another term or Boolean query"><button type="submit">Apply</button></div>${options.within ? `<a href="${escapeHtml(searchRouteHref(query, { ...options, within: null }))}">Clear within search</a>` : ""}</form></details>` : ""}
+    ${query.length >= 2 ? alsoFoundMarkup(query) : ""}
     <progress id="search-progress" value="0" max="1" hidden>Search progress</progress>
     <div id="search-status" role="status" aria-live="polite">${query ? "Preparing search…" : "Enter at least two characters."}</div>
     <p class="supplement-warning" id="search-supplement-warning" role="alert" hidden>The published supplement search data could not be loaded. These results use the base revision and may be incomplete; reload while online before relying on them.</p>
     <ol id="results" class="results"></ol>
     <button type="button" class="search-more" data-search-more hidden>Show more results</button>
-    ${query.length >= 2 ? alsoFoundMarkup(query) : ""}
     <details class="search-history"><summary>Recent searches on this device</summary><div data-search-history>${searchHistoryMarkup()}</div></details>
   </main><footer>${legalFooter()}</footer>`;
   if (query.length < 2) return;
@@ -1403,8 +1412,8 @@ async function renderInfractions(route, sequence) {
   const contextualNavigation = [{
     label: "Infraction categories",
     className: "infraction-categories-column",
-    heading: `<p class="eyebrow">Infractions</p><strong>Categories</strong>`,
-    content: railList(categoryItems)
+    heading: `<p class="eyebrow">Infractions</p><strong>Categories</strong>${browseFilter("rail-category-filter", "Filter categories", "rail-infraction-categories", "Category name")}`,
+    content: `<div id="rail-infraction-categories">${railList(categoryItems)}</div>`
   }];
   if (selectedGroup) contextualNavigation.push({
     label: `${selectedGroup[0]} infractions`,
@@ -1928,6 +1937,15 @@ async function clearDeviceData(action, button) {
   }
 }
 
+// Headings take focus on route changes for screen readers. Only someone tabbing through the
+// page needs to see that as a focus ring (styles.css).
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Tab") document.documentElement.toggleAttribute("data-keyboard-navigation", true);
+}, true);
+document.addEventListener("pointerdown", () => {
+  document.documentElement.toggleAttribute("data-keyboard-navigation", false);
+}, true);
+
 document.addEventListener("input", (event) => {
   if (event.target.matches("[data-filter-list]")) {
     const target = document.getElementById(event.target.dataset.filterList);
@@ -2043,7 +2061,7 @@ document.addEventListener("keydown", (event) => {
   const inField = /^(input|select|textarea)$/i.test(document.activeElement?.tagName ?? "");
   if (event.key === "/" && !inField && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault();
-    const globalInput = document.querySelector("[data-omni-input]");
+    const globalInput = document.querySelector("[data-omni-input], #search-page-query");
     globalInput?.focus();
     globalInput?.select();
   }

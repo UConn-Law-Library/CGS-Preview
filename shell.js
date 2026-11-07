@@ -196,24 +196,32 @@ function backButton() {
   return `<button type="button" class="navigation-back" data-go-back aria-label="Go back" title="Go back to the previous page"${navigationHistory.canGoBack ? "" : " disabled"}><span aria-hidden="true">←</span><span class="back-label"> Back</span></button>`;
 }
 
-function globalSearch({ route = parseRoute(location), showBack = true } = {}) {
-  const searchValue = route.kind === "search" ? route.query ?? "" : "";
-  const placeholder = route.kind === "home" ? "Citation or keywords" : "Search statutes, acts, index, and infractions";
+function historyLink(route) {
+  return `<a class="navigation-history" href="#/history"${route.kind === "history" ? ' aria-current="page"' : ""}><span class="utility-label">History</span><span class="mobile-utility-icon" aria-hidden="true">${svgIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')}</span></a>`;
+}
+
+function globalSearch(route) {
   return `<form class="global-search" data-global-search role="search">
-      ${showBack ? backButton() : ""}
+      ${backButton()}
       <label class="visually-hidden" for="global-query">Search statutes, acts, index topics, and infractions</label>
       <div class="global-search-field">
-        <input id="global-query" name="query" type="search" minlength="2" required value="${escapeHtml(searchValue)}" placeholder="${placeholder}" autocomplete="off" spellcheck="false"
+        <input id="global-query" name="query" type="search" minlength="2" required placeholder="Citation or keywords" autocomplete="off" spellcheck="false"
           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="omni-results" data-omni-input>
         <kbd class="omni-shortcut" aria-hidden="true">/</kbd>
         <div class="omni-panel" id="omni-results" role="listbox" hidden data-omni-panel></div>
       </div>
       <button type="submit" class="global-search-button"><span class="utility-label">Search</span><span class="mobile-utility-icon" aria-hidden="true">${svgIcon('<circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/>')}</span></button>
-      <a class="navigation-history" href="#/history"${route.kind === "history" ? ' aria-current="page"' : ""}><span class="utility-label">History</span><span class="mobile-utility-icon" aria-hidden="true">${svgIcon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>')}</span></a>
+      ${historyLink(route)}
     </form>`;
 }
 
-function siteHeader({ showSearch = true } = {}) {
+// The search page has its own query box. This row keeps the header the same height there,
+// so moving between pages does not shift the content.
+function headerUtilities(route) {
+  return `<div class="global-search header-utilities">${backButton()}${historyLink(route)}</div>`;
+}
+
+function siteHeader() {
   const route = parseRoute(location);
   const active = activeDestination(route);
   const bookmarkCount = deviceState.bookmarks().length;
@@ -221,7 +229,6 @@ function siteHeader({ showSearch = true } = {}) {
     <div class="header-bar">
       <div class="header-identity">
         <a class="brand" href="#/"><span class="brand-mark" aria-hidden="true">§</span><span><small class="brand-library">UConn Law Library</small>Connecticut General Statutes</span></a>
-        ${showSearch ? "" : backButton()}
       </div>
       <nav class="app-nav" aria-label="Main sections">
         ${navLink({ href: "#/", id: "statutes", icon: "§", label: "Statutes" }, active)}
@@ -232,7 +239,7 @@ function siteHeader({ showSearch = true } = {}) {
         <button type="button" data-open-settings aria-expanded="false"${active === "settings" ? ` aria-current="page"` : ""}><span aria-hidden="true">${icons.settings}</span><span>Settings</span></button>
       </nav>
     </div>
-    ${showSearch ? globalSearch({ route }) : ""}
+    ${route.kind === "search" ? headerUtilities(route) : globalSearch(route)}
     ${settingsPanel()}
   </header><dialog class="clear-data-dialog" data-clear-data-dialog aria-labelledby="clear-data-title">
     <h2 id="clear-data-title">Clear data?</h2><p data-clear-data-message></p>
@@ -250,5 +257,5 @@ function siteHeader({ showSearch = true } = {}) {
   </dialog>`;
 }
 
-  return { siteHeader, globalSearch, updatePwaControls };
+  return { siteHeader, updatePwaControls };
 }
