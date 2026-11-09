@@ -1,6 +1,6 @@
 importScripts("./offline-integrity.js");
 
-const BUILD_ID = "00fafe0a2ead";
+const BUILD_ID = "9e3eaeb0ee1e";
 const CORPUS_GENERATED_AT = "2026-07-14T00:27:33Z";
 const CORPUS_SCHEMA_VERSION = "1.0.0";
 const DATA_RELEASE_ID = "f306e0daaaafc78e476c2322fdaac3664605a13c03e15fa1876b661192ce8355";
