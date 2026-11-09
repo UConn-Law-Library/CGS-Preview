@@ -16,7 +16,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   compactLists: true,
   hiddenStatuses: Object.freeze([]),
   subtleNotices: false,
-  navigationTree: false,
+  navigationTree: true,
   readingWidth: "standard"
 });
 
@@ -253,7 +253,7 @@ export class DeviceState {
         : DEFAULT_PREFERENCES.compactLists,
       hiddenStatuses: normalizeHiddenStatuses(value.hiddenStatuses, value.hideRepealedSections === true),
       subtleNotices: value.subtleNotices === true,
-      navigationTree: value.navigationTree === true,
+      navigationTree: Object.prototype.hasOwnProperty.call(value, "navigationTree") ? value.navigationTree === true : DEFAULT_PREFERENCES.navigationTree,
       readingWidth: Object.hasOwn(READING_WIDTHS, value.readingWidth) ? value.readingWidth : DEFAULT_PREFERENCES.readingWidth
     };
   }
