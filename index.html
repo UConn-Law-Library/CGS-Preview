@@ -13,7 +13,7 @@
   <link rel="alternate" href="./discover/" title="Static title and chapter index">
   <title>Connecticut General Statutes</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="preload" href="./data/catalog.json?release=5f12da3dc024b01b90de9367aa96172df2fc81cc4d44f1f603eb8b6de8f4df48" as="fetch" crossorigin>
+  <link rel="preload" href="./data/catalog.json?release=1cec990d5c226aba3e04ee9d2a7467bce80cf478613b4d574c5c1852f8b9c853" as="fetch" crossorigin>
   <link rel="modulepreload" href="./about-page.js">
   <link rel="modulepreload" href="./act-amendments.js">
   <link rel="modulepreload" href="./acts.js">
@@ -23,6 +23,7 @@
   <link rel="modulepreload" href="./data-loader.js">
   <link rel="modulepreload" href="./device-state.js">
   <link rel="modulepreload" href="./dialog.js">
+  <link rel="modulepreload" href="./editions.js">
   <link rel="modulepreload" href="./group-tree.js">
   <link rel="modulepreload" href="./navigation-history.js">
   <link rel="modulepreload" href="./omnisearch-controller.js">
@@ -52,7 +53,7 @@
     const files = ["./data/supplements/manifest.json","./data/supplements/2026/manifest.json"];
     const chapter = route[1] && decodeURIComponent(route[1]);
     if (chapter && !["023m","203b","382e","392a","743kk","art-012","art-012a","819","932"].includes(chapter)) files.push("./data/chapters/" + chapter + ".json");
-    for (const href of files) document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "fetch", crossOrigin: "anonymous", href: href + "?release=5f12da3dc024b01b90de9367aa96172df2fc81cc4d44f1f603eb8b6de8f4df48" }));
+    for (const href of files) document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "fetch", crossOrigin: "anonymous", href: href + "?release=1cec990d5c226aba3e04ee9d2a7467bce80cf478613b4d574c5c1852f8b9c853" }));
   })();
   </script>
   <script type="module" src="./app.js"></script>
