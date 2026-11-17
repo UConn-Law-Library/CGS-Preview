@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-11-16T21:17:28Z",
+  "editions": [
+    {
+      "editionYear": 2024,
+      "generatedAt": "2026-11-16T21:13:52Z",
+      "path": "2024/manifest.json",
+      "counts": {
+        "titles": 58,
+        "chapters": 352,
+        "sections": 1782,
+        "replacements": 1429,
+        "additions": 353
+      }
+    }
+  ]
+}

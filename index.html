@@ -13,7 +13,7 @@
   <link rel="alternate" href="./discover/" title="Static title and chapter index">
   <title>Connecticut General Statutes</title>
   <link rel="stylesheet" href="./styles.css">
-  <link rel="preload" href="./data/catalog.json?release=cfa2dd6e2d171c0ee290cfbf4faab6213f6123b4032d2e5e308d1b648c4bf2ac" as="fetch" crossorigin>
+  <link rel="preload" href="./data/catalog.json?release=5114fb52fa4f5339df461500c80f9eac69b9d7aae197c09d9a8a44e62e2a55c5" as="fetch" crossorigin>
   <link rel="modulepreload" href="./about-page.js">
   <link rel="modulepreload" href="./act-amendments.js">
   <link rel="modulepreload" href="./acts.js">
@@ -53,7 +53,7 @@
     const files = ["./data/supplements/manifest.json","./data/supplements/2026/manifest.json"];
     const chapter = route[1] && decodeURIComponent(route[1]);
     if (chapter && !["023m","203b","382e","392a","743kk","art-012","art-012a","819","932"].includes(chapter)) files.push("./data/chapters/" + chapter + ".json");
-    for (const href of files) document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "fetch", crossOrigin: "anonymous", href: href + "?release=cfa2dd6e2d171c0ee290cfbf4faab6213f6123b4032d2e5e308d1b648c4bf2ac" }));
+    for (const href of files) document.head.append(Object.assign(document.createElement("link"), { rel: "preload", as: "fetch", crossOrigin: "anonymous", href: href + "?release=5114fb52fa4f5339df461500c80f9eac69b9d7aae197c09d9a8a44e62e2a55c5" }));
   })();
   </script>
   <script type="module" src="./app.js"></script>

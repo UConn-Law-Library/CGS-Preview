@@ -1,9 +1,9 @@
 importScripts("./offline-integrity.js");
 
-const BUILD_ID = "8c928a8064b3";
+const BUILD_ID = "3bc45784acd5";
 const CORPUS_GENERATED_AT = "2026-11-12T22:30:49Z";
 const CORPUS_SCHEMA_VERSION = "1.0.0";
-const DATA_RELEASE_ID = "cfa2dd6e2d171c0ee290cfbf4faab6213f6123b4032d2e5e308d1b648c4bf2ac";
+const DATA_RELEASE_ID = "5114fb52fa4f5339df461500c80f9eac69b9d7aae197c09d9a8a44e62e2a55c5";
 const OFFLINE_FORMAT_VERSION = 3;
 // CacheStorage is origin-wide. The older /CT-Statutes/ app owns cgs-shell-*.
 const SHELL_CACHE_PREFIX = `cgs-pages-shell-${encodeURIComponent(new URL(self.registration.scope).pathname)}-`;
