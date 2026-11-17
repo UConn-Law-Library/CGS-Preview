@@ -1,4 +1,4 @@
-const DATA_RELEASE_ID = "1cec990d5c226aba3e04ee9d2a7467bce80cf478613b4d574c5c1852f8b9c853";
+const DATA_RELEASE_ID = "cfa2dd6e2d171c0ee290cfbf4faab6213f6123b4032d2e5e308d1b648c4bf2ac";
 
 // Dispatched on the page when the service worker refuses a request from an older release.
 export const DATA_RELEASE_CHANGED_EVENT = "cgs:data-release-changed";
